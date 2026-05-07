@@ -16,14 +16,41 @@ Los estudiantes deben controlar el empuje de una nave espacial para aterrizar su
 ### Pasos
 
 ```bash
-# Clonar o descargar el proyecto
-cd aterrizaje
+# Clonar el repositorio
+git clone https://github.com/AndresInsuasty/landing-or-not.git
+cd landing-or-not
 
 # Instalar dependencias
-uv add pygame
+uv add pygame matplotlib
 
 # Ejecutar la aplicacion
-uv run main.py
+uv run run.py
+```
+
+---
+
+## Estructura del Proyecto
+
+```
+landing-or-not/
+├── src/
+│   ├── physics.py              # Motor de simulacion puro (sin pygame)
+│   └── main.py                 # Aplicacion pygame con 3 pantallas
+├── scripts/
+│   ├── generate_demo_images.py # Genera imagenes demostrativas
+│   ├── generate_landing_gif.py # Genera GIF animado
+│   └── secuencias_exitosas.txt # Listado de estrategias ganadoras
+├── img/
+│   ├── demo_graphs.png         # Graficos de simulacion
+│   ├── demo_sequence.png       # Secuencia visual de atterrizaje
+│   ├── demo_strategies.png     # Tabla de estrategias
+│   └── landing_animation.gif   # Animacion GIF del atterrizaje
+├── run.py                      # Script principal para ejecutar
+├── pyproject.toml              # Configuracion uv
+├── README.md                   # Este archivo
+├── .gitignore
+├── .python-version
+└── uv.lock                     # Lock file de dependencias
 ```
 
 ---
@@ -58,23 +85,34 @@ Haz clic en **INTENTAR DE NUEVO** para probar otra estrategia.
 
 ---
 
+## Animacion de Atterrizaje
+
+![Animacion de atterrizaje exitoso](img/landing_animation.gif)
+
+*GIF mostrando un atterrizaje exitoso con la estrategia ganadora*
+
+---
+
 ## Imagenes Demostrativas
 
 ### Grafica de Simulacion Exitosa
-![Graficos de altura, velocidad y empuje](demo_graphs.png)
+
+![Graficos de altura, velocidad y empuje](img/demo_graphs.png)
 
 Muestra una simulacion completa con:
-- Izquierda: Altura desciende de 100m a 0m
-- Centro: Velocidad se controla para llegar a -3 m/s exactamente
-- Derecha: Empuje aumenta progresivamente
+- **Izquierda:** Altura desciende de 100m a 0m
+- **Centro:** Velocidad se controla para llegar a -3 m/s exactamente
+- **Derecha:** Empuje aumenta progresivamente
 
 ### Secuencia Visual de Atterrizaje
-![Secuencia en 5 momentos clave](demo_sequence.png)
+
+![Secuencia en 5 momentos clave](img/demo_sequence.png)
 
 Visualizacion de los 5 momentos importantes durante un atterrizaje exitoso.
 
 ### Estrategias Exitosas
-![Tabla de 5 estrategias ganadoras](demo_strategies.png)
+
+![Tabla de 5 estrategias ganadoras](img/demo_strategies.png)
 
 ---
 
@@ -107,7 +145,7 @@ Si empuje = 40%:
 
 ## ESTRATEGIAS DE ATTERRIZAJE EXITOSO
 
-He encontrado 10+ estrategias diferentes que logran atterrizaje exitoso.
+Se encontraron 10+ estrategias diferentes que logran atterrizaje exitoso.
 Aqui estan 5 para que los estudiantes prueben:
 
 ---
@@ -214,7 +252,7 @@ Encuentra una estrategia que atterrice con velocidad EXACTAMENTE igual a -2.0 m/
 
 ## Estructura del Codigo
 
-### physics.py — Motor de Simulacion Puro
+### src/physics.py — Motor de Simulacion Puro
 
 Sin dependencias externas:
 
@@ -228,13 +266,27 @@ classify_outcome(states: list[dict]) -> str
   Retorna: "EXITO", "CHOQUE", o "SIN_ATTERRIZAJE"
 ```
 
-### main.py — Aplicacion Pygame
+### src/main.py — Aplicacion Pygame
 
 Tres pantallas con maquina de estados:
 
 1. **InputScreen**: 10 cajas de texto + validacion
 2. **SimulationScreen**: Animacion 60 FPS con interpolacion suave
 3. **ResultScreen**: Panel de resultados con estadisticas
+
+---
+
+## Scripts Utiles
+
+Los scripts en la carpeta `scripts/` pueden ejecutarse independientemente para regenerar imagenes y GIFs:
+
+```bash
+# Regenerar imagenes demostrativas
+uv run scripts/generate_demo_images.py
+
+# Regenerar GIF animado
+uv run scripts/generate_landing_gif.py
+```
 
 ---
 
@@ -304,42 +356,29 @@ Resultado: Desciende lentamente pero se queda en el aire
 
 ---
 
-## Estructura de Directorios
+## Tecnologias Utilizadas
 
-```
-aterrizaje/
-├── main.py                    # Aplicacion pygame completa
-├── physics.py                 # Motor de fisica puro
-├── generate_demo_images.py    # Script para generar imagenes
-├── pyproject.toml             # Configuracion uv
-├── README.md                  # Este archivo
-├── demo_graphs.png            # Graficos de simulacion
-├── demo_sequence.png          # Secuencia visual de atterrizaje
-├── demo_strategies.png        # Tabla de estrategias
-└── .venv/                     # Entorno virtual (creado por uv)
-```
+- **Python 3.11+** - Lenguaje de programacion
+- **pygame** - Para la interfaz grafica y animaciones
+- **matplotlib** - Para graficos y visualizaciones
+- **Pillow** - Para procesamiento de imagenes y generacion de GIFs
+- **uv** - Manejador moderno de paquetes Python
 
 ---
 
-## Posibles Extensiones
+## Soporte y Contribuciones
 
-Mejoras futuras:
-
-- Agregar combustible limitado (constraint adicional)
-- Multiples niveles de dificultad (gravedad variable)
-- Sistema de puntuacion (basado en eficiencia)
-- Modo multijugador (competencia entre estrategias)
-- Editor grafico de estrategias (deslizadores en lugar de numeros)
-- Replay/grabar mejores atterrizajes
-- Exportar estadisticas a CSV
-
----
-
-## Soporte
-
-Para dudas o problemas:
+Para dudas, sugerencias o reportar problemas:
 1. Verifica que tienes Python 3.11+
-2. Ejecuta `uv add pygame --native-tls` nuevamente
+2. Asegúrate de haber instalado todas las dependencias con `uv add pygame matplotlib`
 3. Intenta con una de las 5 estrategias exitosas del README
 
-Buena suerte, a atterrizar! Saludos.
+---
+
+## Licencia
+
+Creado para fines educativos. Libre para usar, modificar y compartir.
+
+---
+
+**Buena suerte, a atterrizar! Saludos.** 🚀🌙

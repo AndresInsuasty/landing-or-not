@@ -1,12 +1,47 @@
-# Atterrizaje Lunar — Simulador de Algoritmos
+# Aterrizaje Lunar — Simulador de Algoritmos
 
 Una herramienta educativa interactiva para enseñar algoritmos como "secuencia predefinida de instrucciones".
 
-Los estudiantes deben controlar el empuje de una nave espacial para aterrizar suavemente en 10 segundos.
+Los estudiantes arrastran **10 sliders** para configurar el empuje de una nave espacial segundo a segundo y la ven aterrizar (o estrellarse) en tiempo real.
 
 ---
 
-## Instalacion y Ejecucion
+## Vista Previa
+
+### Animación de aterrizaje exitoso
+
+![Animacion de aterrizaje exitoso](img/landing_animation.gif)
+
+---
+
+### Gráficas de simulación
+
+![Graficos de altura, velocidad y empuje](img/demo_graphs.png)
+
+Las tres métricas clave de una simulación completa:
+- **Izquierda:** Altura desciende de 100 m a 0 m
+- **Centro:** Velocidad controlada para llegar a −3 m/s en el aterrizaje
+- **Derecha:** Secuencia de empujes aplicados segundo a segundo
+
+---
+
+### Secuencia visual de aterrizaje
+
+![Secuencia en 5 momentos clave](img/demo_sequence.png)
+
+Los 5 momentos clave del descenso: caída libre, inicio de frenada y aterrizaje suave.
+
+---
+
+### Estrategias ganadoras de referencia
+
+![Tabla de 5 estrategias ganadoras](img/demo_strategies.png)
+
+Cinco secuencias que logran aterrizaje exitoso — úsalas como punto de partida o desafío.
+
+---
+
+## Instalación y Ejecución
 
 ### Requisitos
 
@@ -20,10 +55,7 @@ Los estudiantes deben controlar el empuje de una nave espacial para aterrizar su
 git clone https://github.com/AndresInsuasty/landing-or-not.git
 cd landing-or-not
 
-# Instalar dependencias
-uv add pygame matplotlib
-
-# Ejecutar la aplicacion
+# Ejecutar (uv instala las dependencias automáticamente)
 uv run run.py
 ```
 
@@ -34,85 +66,52 @@ uv run run.py
 ```
 landing-or-not/
 ├── src/
-│   ├── physics.py              # Motor de simulacion puro (sin pygame)
-│   └── main.py                 # Aplicacion pygame con 3 pantallas
+│   ├── physics.py              # Motor de simulación puro (sin pygame)
+│   └── main.py                 # Aplicación pygame con 3 pantallas
 ├── scripts/
-│   ├── generate_demo_images.py # Genera imagenes demostrativas
+│   ├── generate_demo_images.py # Genera imágenes demostrativas
 │   ├── generate_landing_gif.py # Genera GIF animado
 │   └── secuencias_exitosas.txt # Listado de estrategias ganadoras
 ├── img/
-│   ├── demo_graphs.png         # Graficos de simulacion
-│   ├── demo_sequence.png       # Secuencia visual de atterrizaje
+│   ├── demo_graphs.png         # Gráficos de simulación
+│   ├── demo_sequence.png       # Secuencia visual de aterrizaje
 │   ├── demo_strategies.png     # Tabla de estrategias
-│   └── landing_animation.gif   # Animacion GIF del atterrizaje
-├── run.py                      # Script principal para ejecutar
-├── pyproject.toml              # Configuracion uv
-├── README.md                   # Este archivo
-├── .gitignore
-├── .python-version
-└── uv.lock                     # Lock file de dependencias
+│   └── landing_animation.gif   # Animación GIF del aterrizaje
+├── run.py                      # Entry point
+├── pyproject.toml              # Configuración uv
+├── CLAUDE.md                   # Guía para Claude Code
+└── README.md                   # Este archivo
 ```
 
 ---
 
-## Como Usar
+## Cómo Usar
 
 ### 1. Pantalla de Entrada
 
-- Ingresa un valor de empuje (0-100%) para **cada uno de los 10 segundos**
-- **Consejo:** Empuje al **40%** cancela la gravedad (punto de equilibrio)
+- Arrastra los **10 sliders** para configurar el empuje de cada segundo (0–100%)
+- Usa ← → para ajuste fino de ±5 % · Shift + ← → para ±1 %
+- **Clave:** Empuje al **40 %** cancela la gravedad (hover perfecto)
 - Haz clic en **SIMULAR** para ejecutar tu algoritmo
 
-### 2. Simulacion
+### 2. Simulación
 
-- Observa la nave animada descendiendo/aterrizando
-- Panel izquierdo muestra telemetria en tiempo real:
-  - Altura actual (m)
-  - Velocidad actual (m/s)
-  - Empuje aplicado (%)
-  - Barra de empuje visual
-- Duracion: ~1.5 segundos de animacion por segundo simulado
+- Observa la nave animada descendiendo con llamas reactivas
+- Panel izquierdo muestra telemetría en tiempo real: altura, velocidad, empuje
+- Barra de progreso de tiempo en la parte superior (10 segmentos)
+- Duración: ~1.5 s de animación por segundo simulado
 
 ### 3. Resultados
 
 Tres posibles resultados:
 
-- OK - **ATTERRIZAJE EXITOSO** — Velocidad final |v| <= 3 m/s → Verde
-- CRASH - **CHOQUE! NAVE DESTRUIDA** — Velocidad final |v| > 3 m/s → Rojo
-- MISS - **SIN ATTERRIZAJE** — Altura > 0 m despues de 10 segundos → Amarillo
+| Resultado | Condición | Color |
+|-----------|-----------|-------|
+| **ATERRIZAJE EXITOSO** | `\|v\|` ≤ 3 m/s al tocar suelo | Verde |
+| **CHOQUE — NAVE DESTRUIDA** | `\|v\|` > 3 m/s al tocar suelo | Rojo |
+| **SIN ATERRIZAJE** | Altura > 0 m después de 10 s | Amarillo |
 
 Haz clic en **INTENTAR DE NUEVO** para probar otra estrategia.
-
----
-
-## Animacion de Atterrizaje
-
-![Animacion de atterrizaje exitoso](img/landing_animation.gif)
-
-*GIF mostrando un atterrizaje exitoso con la estrategia ganadora*
-
----
-
-## Imagenes Demostrativas
-
-### Grafica de Simulacion Exitosa
-
-![Graficos de altura, velocidad y empuje](img/demo_graphs.png)
-
-Muestra una simulacion completa con:
-- **Izquierda:** Altura desciende de 100m a 0m
-- **Centro:** Velocidad se controla para llegar a -3 m/s exactamente
-- **Derecha:** Empuje aumenta progresivamente
-
-### Secuencia Visual de Atterrizaje
-
-![Secuencia en 5 momentos clave](img/demo_sequence.png)
-
-Visualizacion de los 5 momentos importantes durante un atterrizaje exitoso.
-
-### Estrategias Exitosas
-
-![Tabla de 5 estrategias ganadoras](img/demo_strategies.png)
 
 ---
 
@@ -266,13 +265,13 @@ classify_outcome(states: list[dict]) -> str
   Retorna: "EXITO", "CHOQUE", o "SIN_ATTERRIZAJE"
 ```
 
-### src/main.py — Aplicacion Pygame
+### src/main.py — Aplicación Pygame
 
-Tres pantallas con maquina de estados:
+Tres pantallas con máquina de estados:
 
-1. **InputScreen**: 10 cajas de texto + validacion
-2. **SimulationScreen**: Animacion 60 FPS con interpolacion suave
-3. **ResultScreen**: Panel de resultados con estadisticas
+1. **InputScreen**: 10 sliders arrastrables con previsualización en tiempo real
+2. **SimulationScreen**: Animación 60 FPS con telemetría, grid de altitud y barra de tiempo
+3. **ResultScreen**: Panel de resultados con barras de empuje y mensaje educativo
 
 ---
 

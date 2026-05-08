@@ -12,8 +12,8 @@ plt.style.use('dark_background')
 FIGSIZE = (14, 5)
 DPI = 100
 
-# Estrategia exitosa
-winning_strategy = [0, 0, 0, 15, 60, 80, 95, 90, 95, 100]
+# Estrategia exitosa (verificada con la física actual: V0=0, integración exacta)
+winning_strategy = [0, 0, 0, 0, 37, 52, 56, 84, 71, 100]
 states = simulate(winning_strategy)
 
 # ============================================================================
@@ -140,11 +140,11 @@ ax.axis('tight')
 ax.axis('off')
 
 strategies_list = [
-    ("Ganadora Original", [0, 0, 0, 15, 60, 80, 95, 90, 95, 100], "La primera encontrada"),
-    ("Balance Suave", [0, 0, 0, 10, 61, 94, 85, 90, 95, 100], "Descenso más controlado"),
-    ("Balance Medio", [0, 0, 0, 11, 60, 94, 85, 90, 95, 100], "Equilibrio perfecto"),
-    ("Frenada Progresiva", [0, 0, 0, 13, 58, 94, 85, 90, 95, 100], "Aumento gradual"),
-    ("Variante Agresiva", [0, 0, 0, 10, 65, 90, 85, 90, 95, 100], "Más empuje temprano"),
+    ("Aterrizaje suave",   [0, 0, 0, 0, 37, 52, 56, 84, 71, 100], "v=0.0 m/s al tocar"),
+    ("Frenada equilibrada",[0, 0, 0, 0, 51, 42, 50, 66, 95, 96], "Empuje temprano y final fuerte"),
+    ("Curva creciente",    [0, 0, 0, 0, 32, 57, 54, 80, 90, 87], "Empuje crece gradualmente"),
+    ("Frenado tardío",     [0, 0, 0, 0, 30, 63, 66, 62, 77, 100], "Picos al final"),
+    ("Empuje constante",   [0, 0, 0, 0, 35, 50, 71, 71, 71, 100], "Meseta de 71% estable"),
 ]
 
 table_data = []

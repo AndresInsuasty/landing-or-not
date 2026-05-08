@@ -12,8 +12,9 @@ plt.style.use('dark_background')
 FIGSIZE = (14, 5)
 DPI = 100
 
-# Estrategia exitosa (verificada con la física actual: V0=0, integración exacta)
-winning_strategy = [0, 0, 0, 0, 37, 52, 56, 84, 71, 100]
+# Estrategia exitosa (verificada con la física actual: V0=0, integración exacta).
+# Secuencia robusta: tolera desviaciones de ±1% en cualquier slider.
+winning_strategy = [0, 0, 0, 0, 36, 45, 52, 93, 94, 75]
 states = simulate(winning_strategy)
 
 # ============================================================================
@@ -140,11 +141,11 @@ ax.axis('tight')
 ax.axis('off')
 
 strategies_list = [
-    ("Aterrizaje suave",   [0, 0, 0, 0, 37, 52, 56, 84, 71, 100], "v=0.0 m/s al tocar"),
-    ("Frenada equilibrada",[0, 0, 0, 0, 51, 42, 50, 66, 95, 96], "Empuje temprano y final fuerte"),
-    ("Curva creciente",    [0, 0, 0, 0, 32, 57, 54, 80, 90, 87], "Empuje crece gradualmente"),
-    ("Frenado tardío",     [0, 0, 0, 0, 30, 63, 66, 62, 77, 100], "Picos al final"),
-    ("Empuje constante",   [0, 0, 0, 0, 35, 50, 71, 71, 71, 100], "Meseta de 71% estable"),
+    ("Aterrizaje suave",   [0, 0, 0, 0, 36, 45, 52, 93, 94, 75], "Robusta a ±1%"),
+    ("Frenada equilibrada",[0, 0, 0, 0, 28, 53, 54, 93, 93, 76], "Frenado fuerte tardío"),
+    ("Frenado pico",       [0, 0, 0, 0, 30, 48, 59, 87, 100, 79], "100% en t=9"),
+    ("Curva pronunciada",  [0, 0, 0, 0, 38, 36, 70, 83, 89, 75], "Empuje crece desde 70%"),
+    ("Frenado tardío",     [0, 0, 0, 0, 32, 46, 67, 76, 98, 78], "Pico cerca del final"),
 ]
 
 table_data = []

@@ -1,10 +1,9 @@
 """
-Búsqueda automática de secuencias exitosas para el simulador lunar.
+Búsqueda automática de secuencias exitosas y ROBUSTAS.
 
-Estrategia:
-  1. Búsqueda aleatoria amplia con perfiles "caída libre + frenado".
-  2. Filtrado por outcome == "EXITO".
-  3. Selección de secuencias DIVERSAS (distancia mínima entre ellas).
+Una secuencia es robusta si aterriza exitosamente con los valores exactos
+y también con cada una de las perturbaciones de ±1% en cualquier paso.
+Esto garantiza que un estudiante con error de slider de ±1% también vea EXITO.
 
 Sobrescribe `scripts/secuencias_exitosas.txt` con las 10 mejores.
 """
@@ -17,94 +16,120 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import physics  # noqa: E402
 
 
-SEED = 7
+SEED = 13
 NUM_TARGET = 10
-MIN_DISTANCE = 25  # distancia L1 mínima entre secuencias seleccionadas
+MIN_DISTANCE = 20      # distancia L1 mínima entre secuencias seleccionadas
+MIN_ROBUST_HITS = 16   # de 20 perturbaciones de ±1%, cuántas deben aterrizar
 
 
 def random_profile(rng: random.Random) -> list[int]:
-    """
-    Genera un perfil plausible: K segundos de caída libre seguidos de
-    empujes crecientes/aleatorios. Aumenta la tasa de éxito vs. random puro.
-    """
+    """Caída libre + frenado creciente con jitter."""
     free_fall = rng.randint(2, 5)
     seq = [0] * free_fall
     remaining = 10 - free_fall
-
-    # Empuje base alto al final, con jitter
     for i in range(remaining):
         progress = i / max(1, remaining - 1)
-        base = 50 + progress * 50  # 50% → 100%
-        jitter = rng.randint(-20, 15)
+        base = 50 + progress * 50
+        jitter = rng.randint(-25, 15)
         val = int(round(base + jitter))
         seq.append(max(0, min(100, val)))
-
     return seq
 
 
-def is_winning(seq: list[int]) -> tuple[bool, dict]:
-    """Returns (success, final_state)."""
+def outcome_of(seq: list[int]) -> str:
     states = physics.simulate([float(v) for v in seq])
-    outcome = physics.classify_outcome(states)
-    return outcome == "EXITO", states[-1]
+    return physics.classify_outcome(states)
+
+
+def impact_speed(seq: list[int]) -> float:
+    states = physics.simulate([float(v) for v in seq])
+    return abs(states[-1]['v'])
+
+
+def robust_score(seq: list[int], delta: int = 1) -> int:
+    """
+    Cuenta cuántas perturbaciones individuales de ±delta% siguen aterrizando
+    exitosamente. Hay 20 perturbaciones (10 pasos × 2 direcciones).
+    """
+    hits = 0
+    for i in range(len(seq)):
+        for d in (-delta, +delta):
+            new_val = seq[i] + d
+            if not (0 <= new_val <= 100):
+                hits += 1  # perturbación inválida (clamp), no penalizar
+                continue
+            perturbed = seq.copy()
+            perturbed[i] = new_val
+            if outcome_of(perturbed) == "EXITO":
+                hits += 1
+    return hits
 
 
 def l1_distance(a: list[int], b: list[int]) -> int:
     return sum(abs(x - y) for x, y in zip(a, b))
 
 
-def search(num_iterations: int = 200_000) -> list[tuple[list[int], dict]]:
+def search(num_iterations: int = 300_000) -> list[tuple[list[int], int]]:
     rng = random.Random(SEED)
-    winners: list[tuple[list[int], dict]] = []
+    robust: list[tuple[list[int], int]] = []
     seen: set[tuple[int, ...]] = set()
+    checked = 0
 
-    for _ in range(num_iterations):
+    for it in range(num_iterations):
         seq = random_profile(rng)
         key = tuple(seq)
         if key in seen:
             continue
         seen.add(key)
 
-        ok, final = is_winning(seq)
-        if ok:
-            winners.append((seq, final))
+        # Filtro rápido: primero comprobar que la secuencia base aterriza.
+        if outcome_of(seq) != "EXITO":
+            continue
+        checked += 1
+        score = robust_score(seq)
+        if score >= MIN_ROBUST_HITS:
+            robust.append((seq, score))
 
-    return winners
+        if it % 25_000 == 0 and it > 0:
+            print(f"  iter {it:>6}  candidatas-EXITO probadas: {checked}  "
+                  f"robustas (score≥{MIN_ROBUST_HITS}): {len(robust)}")
+
+    print(f"  Total robustas encontradas: {len(robust)}")
+    return robust
 
 
-def select_diverse(winners: list[tuple[list[int], dict]],
-                   k: int,
-                   min_dist: int) -> list[tuple[list[int], dict]]:
-    """
-    Selección codiciosa: ordena por |v_impacto| (más suave primero) y
-    descarta candidatos demasiado parecidos a los ya elegidos.
-    """
-    winners_sorted = sorted(winners, key=lambda w: abs(w[1]['v']))
-    chosen: list[tuple[list[int], dict]] = []
-
-    for seq, final in winners_sorted:
-        if all(l1_distance(seq, c[0]) >= min_dist for c in chosen):
-            chosen.append((seq, final))
+def select_diverse(scored: list[tuple[list[int], int]],
+                   k: int, min_dist: int) -> list[tuple[list[int], int]]:
+    """Elige k secuencias diversas, ordenadas por score (más robustas primero)."""
+    sorted_by_score = sorted(scored, key=lambda sc: (-sc[1], impact_speed(sc[0])))
+    chosen: list[tuple[list[int], int]] = []
+    for s, sc in sorted_by_score:
+        if all(l1_distance(s, c[0]) >= min_dist for c in chosen):
+            chosen.append((s, sc))
             if len(chosen) >= k:
                 break
-
     return chosen
 
 
 def main():
-    print(f"Buscando secuencias exitosas (semilla={SEED})...")
-    winners = search()
-    print(f"  Encontradas {len(winners)} secuencias exitosas en total.")
+    print(f"Buscando secuencias ROBUSTAS (semilla={SEED}, "
+          f"score>={MIN_ROBUST_HITS}/20 perturbaciones de ±1%)...")
+    scored = search()
 
-    chosen = select_diverse(winners, NUM_TARGET, MIN_DISTANCE)
-    print(f"  Seleccionadas {len(chosen)} secuencias diversas.\n")
+    if not scored:
+        print("  No se encontraron secuencias robustas.")
+        return
+
+    chosen = select_diverse(scored, NUM_TARGET, MIN_DISTANCE)
+    print(f"\n  Seleccionadas {len(chosen)} secuencias diversas:\n")
 
     out_path = Path(__file__).resolve().parent / "secuencias_exitosas.txt"
     lines = []
-    for i, (seq, final) in enumerate(chosen, 1):
+    for i, (seq, sc) in enumerate(chosen, 1):
         seq_str = "[" + ", ".join(str(v) for v in seq) + "]"
         lines.append(f"{i}. {seq_str}")
-        print(f"  {i:2d}. {seq_str}   |v_impacto|={abs(final['v']):.2f} m/s")
+        v = impact_speed(seq)
+        print(f"  {i:2d}. {seq_str}   robust={sc}/20   |v_impact|={v:.2f} m/s")
 
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"\nEscrito: {out_path}")

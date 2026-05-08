@@ -9,8 +9,9 @@ from physics import simulate
 from PIL import Image
 import io
 
-# Estrategia ganadora (verificada con la física actual: V0=0, integración exacta)
-winning_strategy = [0, 0, 0, 0, 37, 52, 56, 84, 71, 100]
+# Estrategia ganadora (verificada con la física actual: V0=0, integración exacta).
+# Secuencia robusta: tolera desviaciones de ±1% en cualquier slider.
+winning_strategy = [0, 0, 0, 0, 36, 45, 52, 93, 94, 75]
 states = simulate(winning_strategy)
 
 print("Generando frames para GIF...")

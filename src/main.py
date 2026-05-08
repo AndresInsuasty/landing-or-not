@@ -247,8 +247,12 @@ class SliderBox:
 
     # ── internal helpers ────────────────────────────────────────
     def _value_from_x(self, x: int) -> float:
+        # Snap a entero: lo que ve el estudiante en pantalla coincide con
+        # el valor que se simula. Sin esto, un slider en "71.8%" se muestra
+        # como "71%" pero internamente se usa 71.8 → la nave no aterriza
+        # como anuncia la pantalla.
         ratio = (x - self.rect.left) / max(1, self.rect.width)
-        return clamp_01(ratio) * 100.0
+        return float(round(clamp_01(ratio) * 100.0))
 
     def _knob_x(self) -> int:
         return self.rect.left + int(self.rect.width * self.value / 100.0)

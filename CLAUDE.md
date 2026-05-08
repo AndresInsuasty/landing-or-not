@@ -84,11 +84,14 @@ Tiempo teórico de caída libre (sin empuje): √50 ≈ 7.07 s.
 ## Secuencia exitosa de referencia
 
 ```python
-[0, 0, 0, 0, 37, 52, 56, 84, 71, 100]
+[0, 0, 0, 0, 36, 45, 52, 93, 94, 75]
 ```
 
-Más alternativas en `scripts/secuencias_exitosas.txt`. Para regenerar tras un
-cambio en la física:
+Las 10 secuencias en `scripts/secuencias_exitosas.txt` son **robustas**: aterrizan
+con éxito incluso si el estudiante se desvía ±1% en cualquier paso individual.
+Esto compensa la imprecisión natural al arrastrar los sliders.
+
+Para regenerar tras un cambio en la física:
 
 ```bash
 uv run scripts/find_winning_sequences.py

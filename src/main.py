@@ -531,31 +531,38 @@ class SimulationScreen:
                 self.done = True
 
     def _draw_time_progress(self, surface):
-        """Barra de progreso de tiempo con 10 segmentos."""
+        """Barra de progreso continua: se llena suavemente con la simulación."""
         bar_x = self.VP_X
-        bar_y = 18
-        seg_w = self.VP_W // 10
-        seg_h = 18
-        seg_gap = 4
+        bar_y = 16
+        bar_w = self.VP_W
+        bar_h = 12
+        radius = bar_h // 2
 
-        for i in range(10):
-            sx = bar_x + i * (seg_w + seg_gap // 2)
-            sr = pygame.Rect(sx, bar_y, seg_w - seg_gap, seg_h)
-            if i < self.current_step:
-                pygame.draw.rect(surface, COLOR_ACCENT, sr, border_radius=3)
-            elif i == self.current_step:
-                # Segmento activo con pulso
-                pulse = int(abs(math.sin(self.app.time * 4)) * 60 + 160)
-                active_color = (min(255, COLOR_ACCENT[0] + 30), pulse, 255)
-                pygame.draw.rect(surface, active_color, sr, border_radius=3)
-            else:
-                pygame.draw.rect(surface, COLOR_PANEL, sr, border_radius=3)
-                pygame.draw.rect(surface, COLOR_BORDER, sr, 1, border_radius=3)
+        # Progreso real: paso actual + fracción del paso en curso
+        total_steps = len(self.states) - 1
+        progress = clamp_01(
+            (self.current_step + clamp_01(self.step_t / ANIM_DURATION_PER_STEP))
+            / max(total_steps, 1)
+        )
 
-            label = f"{i+1}"
-            draw_text_centered(surface, label, self.app.font_tiny,
-                               COLOR_TEXT_DIM if i > self.current_step else COLOR_TEXT,
-                               sx + (seg_w - seg_gap) // 2, bar_y + seg_h // 2)
+        track_rect = pygame.Rect(bar_x, bar_y, bar_w, bar_h)
+
+        # Fondo
+        pygame.draw.rect(surface, COLOR_PANEL, track_rect, border_radius=radius)
+
+        # Relleno
+        fill_w = max(radius * 2, int(bar_w * progress))
+        fill_rect = pygame.Rect(bar_x, bar_y, fill_w, bar_h)
+        pygame.draw.rect(surface, COLOR_ACCENT, fill_rect, border_radius=radius)
+
+        # Borde exterior
+        pygame.draw.rect(surface, COLOR_BORDER, track_rect, 1, border_radius=radius)
+
+        # Punto luminoso en el frente del relleno
+        tip_x = bar_x + fill_w
+        glow = int(abs(math.sin(self.app.time * 5)) * 60 + 160)
+        tip_color = (glow, min(255, glow + 40), 255)
+        pygame.draw.circle(surface, tip_color, (tip_x, bar_y + bar_h // 2), bar_h // 2)
 
     def _draw_telemetry_panel(self, surface):
         """Panel izquierdo con telemetría detallada."""
@@ -728,7 +735,7 @@ class ResultScreen:
         self.fade_timer = 0.5
         btn_w = 260
         self.button_rect = pygame.Rect(
-            WINDOW_WIDTH // 2 - btn_w // 2, 680, btn_w, 55)
+            WINDOW_WIDTH // 2 - btn_w // 2, 660, btn_w, 52)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -871,6 +878,9 @@ class ResultScreen:
         draw_text_centered(surface, edu_msg, self.app.font_small, edu_color,
                            WINDOW_WIDTH // 2, edu_rect.centery)
 
+        # ── Gráficas de simulación ─────────────────────────────────
+        self._draw_simulation_graphs(surface)
+
         # ── Botón ──────────────────────────────────────────────────
         mouse = pygame.mouse.get_pos()
         hover = is_mouse_over_rect(mouse, self.button_rect)
@@ -882,6 +892,129 @@ class ResultScreen:
         draw_text_centered(surface, "INTENTAR DE NUEVO",
                            self.app.font_large, COLOR_TEXT,
                            self.button_rect.centerx, self.button_rect.centery)
+
+    def _draw_mini_chart(self, surface, rect, title,
+                         x_vals, y_vals, y_min, y_max, line_color,
+                         safe_band=None):
+        """Dibuja una mini gráfica de línea dentro de rect.
+        safe_band=(y_lo, y_hi) resalta una banda horizontal (p.ej. zona segura de velocidad).
+        """
+        font = self.app.font_tiny
+        ml, mr, mt, mb = 36, 8, 20, 17
+        pw = rect.width - ml - mr
+        ph = rect.height - mt - mb
+        px0, py0 = rect.x + ml, rect.y + mt
+        x_min, x_max = min(x_vals), max(x_vals)
+        x_rng = (x_max - x_min) or 1
+        y_rng = (y_max - y_min) or 1
+
+        def sp(xi, yi):
+            sx = px0 + int((xi - x_min) / x_rng * pw)
+            sy = py0 + ph - int((yi - y_min) / y_rng * ph)
+            return sx, max(py0, min(py0 + ph, sy))
+
+        # Panel de fondo
+        draw_rounded_panel(surface, rect, COLOR_PANEL, 6)
+        pygame.draw.rect(surface, COLOR_BORDER, rect, 1, border_radius=6)
+
+        # Título
+        draw_text_centered(surface, title, font, COLOR_ACCENT,
+                           rect.centerx, rect.y + 10)
+
+        # Banda de zona segura (para velocidad)
+        if safe_band:
+            blo, bhi = safe_band
+            _, y_top = sp(x_min, min(bhi, y_max))
+            _, y_bot = sp(x_min, max(blo, y_min))
+            if y_bot > y_top:
+                bsurf = pygame.Surface((pw, y_bot - y_top), pygame.SRCALPHA)
+                bsurf.fill((50, 220, 100, 28))
+                surface.blit(bsurf, (px0, y_top))
+                # Líneas punteadas en los bordes de la banda
+                pygame.draw.line(surface, (*COLOR_SUCCESS, 80),
+                                 (px0, y_top), (px0 + pw, y_top), 1)
+                pygame.draw.line(surface, (*COLOR_SUCCESS, 80),
+                                 (px0, y_bot), (px0 + pw, y_bot), 1)
+
+        # Grid horizontal
+        n_ticks = 4
+        for i in range(n_ticks + 1):
+            gy_grid = py0 + i * ph // n_ticks
+            pygame.draw.line(surface, COLOR_BORDER,
+                             (px0, gy_grid), (px0 + pw, gy_grid))
+            yval = y_max - i * y_rng / n_ticks
+            draw_text_right(surface, f"{yval:.0f}", font,
+                            COLOR_TEXT_DIM, px0 - 2, gy_grid - 6)
+
+        # Eje X inferior
+        pygame.draw.line(surface, COLOR_BORDER,
+                         (px0, py0 + ph), (px0 + pw, py0 + ph))
+
+        # Etiquetas eje X
+        step_x = max(1, int(x_max) // 2)
+        for xi_lbl in range(0, int(x_max) + 1, step_x):
+            lx = px0 + int((xi_lbl - x_min) / x_rng * pw)
+            draw_text_centered(surface, str(xi_lbl), font,
+                               COLOR_TEXT_DIM, lx, py0 + ph + 7)
+
+        if len(x_vals) < 2:
+            return
+
+        pts = [sp(xi, yi) for xi, yi in zip(x_vals, y_vals)]
+
+        # Relleno bajo la curva (transparente)
+        zero_y = sp(x_min, max(y_min, min(0.0, y_max)))[1]
+        poly = [(pts[0][0], zero_y)] + pts + [(pts[-1][0], zero_y)]
+        fill_s = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        local_poly = [(p[0] - rect.x, p[1] - rect.y) for p in poly]
+        pygame.draw.polygon(fill_s, (*line_color, 38), local_poly)
+        surface.blit(fill_s, rect.topleft)
+
+        # Línea de datos
+        pygame.draw.lines(surface, line_color, False, pts, 2)
+
+        # Puntos de datos (coloreados por seguridad en gráfica de velocidad)
+        for i, (sx, sy) in enumerate(pts):
+            dot_c = line_color
+            if safe_band is not None:
+                v = y_vals[i]
+                dot_c = (COLOR_SUCCESS if abs(v) <= 3
+                         else COLOR_WARNING if abs(v) <= 7
+                         else COLOR_CRASH)
+            pygame.draw.circle(surface, dot_c, (sx, sy), 3)
+            pygame.draw.circle(surface, COLOR_BG, (sx, sy), 1)
+
+    def _draw_simulation_graphs(self, surface):
+        """Tres gráficas de medición debajo del mensaje educativo."""
+        t_vals  = [s['t']      for s in self.states]
+        h_vals  = [s['h']      for s in self.states]
+        v_vals  = [s['v']      for s in self.states]
+        emp_vals = [s['thrust'] for s in self.states]
+
+        margin_x = 60
+        gy   = 408
+        gh   = 240
+        gap  = 10
+        gw   = (WINDOW_WIDTH - margin_x * 2 - gap * 2) // 3
+
+        v_min = min(v_vals) - 1.0
+        v_max = max(max(v_vals), 3.0) + 0.5
+
+        charts = [
+            (pygame.Rect(margin_x, gy, gw, gh),
+             "ALTURA  (m)",
+             t_vals, h_vals, 0.0, 105.0, COLOR_SUCCESS, None),
+            (pygame.Rect(margin_x + gw + gap, gy, gw, gh),
+             "VELOCIDAD  (m/s)",
+             t_vals, v_vals, v_min, v_max, COLOR_ACCENT, (-3.0, 3.0)),
+            (pygame.Rect(margin_x + 2 * (gw + gap), gy, gw, gh),
+             "EMPUJE  (%)",
+             t_vals, emp_vals, 0.0, 105.0, COLOR_THRUST, None),
+        ]
+
+        for rect, title, xv, yv, ymn, ymx, col, sband in charts:
+            self._draw_mini_chart(surface, rect, title,
+                                  xv, yv, ymn, ymx, col, sband)
 
 
 # ============================================================================
